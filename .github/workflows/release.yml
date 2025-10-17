@@ -33,7 +33,7 @@ jobs:
         run: cargo build --release --target=wasm32-wasip1
 
       - name: Generate a changelog
-        uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7 # v3
+        uses: orhun/git-cliff-action@d77b37db2e3f7398432d34b72a12aa3e2ba87e51 # v3
         id: git-cliff
         with:
           config: cliff.toml
