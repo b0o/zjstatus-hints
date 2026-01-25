@@ -18,6 +18,7 @@ struct State {
     max_length: usize,
     overflow_str: String,
     hide_in_base_mode: bool,
+    hide_in_locked_mode: bool,
 }
 
 register_plugin!(State);
@@ -119,6 +120,10 @@ impl ZellijPlugin for State {
             .get("hide_in_base_mode")
             .map(|s| s.to_lowercase().parse::<bool>().unwrap_or(false))
             .unwrap_or(false);
+        self.hide_in_locked_mode = configuration
+            .get("hide_in_locked_mode")
+            .map(|s| s.to_lowercase().parse::<bool>().unwrap_or(false))
+            .unwrap_or(false);
 
         request_permission(&[
             PermissionType::ReadApplicationState,
@@ -143,7 +148,9 @@ impl ZellijPlugin for State {
 
     fn render(&mut self, _rows: usize, _cols: usize) {
         let mode_info = &self.mode_info;
-        let output = if !(self.hide_in_base_mode && Some(mode_info.mode) == mode_info.base_mode) {
+        let hide_for_base = self.hide_in_base_mode && Some(mode_info.mode) == mode_info.base_mode;
+        let hide_for_locked = self.hide_in_locked_mode && mode_info.mode == InputMode::Locked;
+        let output = if !(hide_for_base || hide_for_locked) {
             let keymap = get_keymap_for_mode(mode_info);
             let parts = render_hints_for_mode(mode_info.mode, &keymap, &mode_info.style.colors);
 
