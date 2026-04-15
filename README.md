@@ -49,6 +49,9 @@ plugins {
         // Limit alternative keybindings shown per action (0 = unlimited)
         max_keys "0" // default
 
+        // Omit key/label background colors for a transparent look
+        transparent_bg false // default
+
         // Rename action labels in the display (spaces → underscores in key names)
         // alias_fullscreen "full"
         // alias_split_right "S→"
@@ -107,6 +110,7 @@ layout {
 | `hint_format` | `"{key} {action}"` | Template for each hint. Variables: `{key}`, `{action}`. |
 | `separator` | `""` | String inserted between hints. |
 | `max_keys` | `0` | Max alternative keybindings shown per action. `0` = unlimited. |
+| `transparent_bg` | `false` | Omit key/label background colors, even if configured. |
 | `alias_{label}` | _(none)_ | Rename an action label in the display. See below. |
 | `key_alias_{key}` | _(none)_ | Rename a special bare key in the display. See below. |
 | `key_fg` | _(palette)_ | Global foreground color for key blocks. |
@@ -229,7 +233,8 @@ This produces output similar to:
 
 zjstatus-hints supports full color customization so you can match hint colors to your zjstatus theme.
 All color values are hex strings (`"#RRGGBB"`).  If a color option is omitted the plugin falls back
-to the Zellij palette (backward-compatible default behavior).
+to the Zellij palette (backward-compatible default behavior). Set `transparent_bg true` to suppress
+all key/label background colors, including configured `key_bg` / `label_bg` overrides.
 
 ### Global color defaults
 
