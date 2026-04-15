@@ -203,6 +203,7 @@ struct State {
     /// User-defined display aliases for special bare keys.
     /// Key = lowercase key name (e.g. `"enter"`, `"space"`), value = replacement.
     key_aliases: HashMap<String, String>,
+    transparent_bg: bool,
 }
 
 register_plugin!(State);
@@ -364,6 +365,10 @@ impl ZellijPlugin for State {
                     .map(|key_raw| (key_raw.to_lowercase(), v.clone()))
             })
             .collect();
+        self.transparent_bg = configuration
+            .get("transparent_bg")
+            .map(|s| s.to_lowercase().parse::<bool>().unwrap_or(false))
+            .unwrap_or(false);
 
         request_permission(&[
             PermissionType::ReadApplicationState,
@@ -401,6 +406,7 @@ impl ZellijPlugin for State {
                 self.max_keys,
                 &self.action_aliases,
                 &self.key_aliases,
+                self.transparent_bg,
             );
 
             let ansi_strings = ANSIStrings(&parts);
@@ -677,6 +683,7 @@ fn style_key_with_modifier(
     label: &str,
     modifier_style: ModifierStyle,
     key_aliases: &HashMap<String, String>,
+    transparent_bg: bool,
 ) -> Vec<ANSIString<'static>> {
     if key_bindings.is_empty() {
         return vec![];
@@ -689,6 +696,13 @@ fn style_key_with_modifier(
     let bg = resolved
         .key_bg
         .unwrap_or_else(|| palette_match!(palette.ribbon_unselected.background));
+    let base_style = || {
+        let mut style = Style::new().fg(fg);
+        if !transparent_bg {
+            style = style.on(bg);
+        }
+        style
+    };
 
     let mut styled_parts = vec![];
 
@@ -701,25 +715,19 @@ fn style_key_with_modifier(
 
     if !modifier_str.is_empty() {
         let sep = modifier_separator(modifier_style);
-        styled_parts.push(
-            Style::new()
-                .fg(fg)
-                .on(bg)
-                .bold()
-                .paint(format!(" {}{}", modifier_str, sep)),
-        );
+        styled_parts.push(base_style().bold().paint(format!(" {}{}", modifier_str, sep)));
     } else {
-        styled_parts.push(Style::new().fg(fg).on(bg).paint(" "));
+        styled_parts.push(base_style().paint(" "));
     }
 
     for (idx, key) in key_display.iter().enumerate() {
         if idx > 0 && !key_separator.is_empty() {
-            styled_parts.push(Style::new().fg(fg).on(bg).paint(key_separator));
+            styled_parts.push(base_style().paint(key_separator));
         }
-        styled_parts.push(Style::new().fg(fg).on(bg).bold().paint(key.clone()));
+        styled_parts.push(base_style().bold().paint(key.clone()));
     }
 
-    styled_parts.push(Style::new().fg(fg).on(bg).paint(" "));
+    styled_parts.push(base_style().paint(" "));
 
     styled_parts
 }
@@ -730,6 +738,7 @@ fn style_description(
     color_config: &ColorConfig,
     mode: Option<&str>,
     label: &str,
+    transparent_bg: bool,
 ) -> Vec<ANSIString<'static>> {
     let resolved = get_colors_for_label(color_config, mode, label);
     let fg = resolved
@@ -739,10 +748,12 @@ fn style_description(
         .label_bg
         .unwrap_or_else(|| palette_match!(palette.text_unselected.background));
 
-    vec![Style::new()
-        .fg(fg)
-        .on(bg)
-        .paint(format!(" {} ", description))]
+    let mut style = Style::new().fg(fg);
+    if !transparent_bg {
+        style = style.on(bg);
+    }
+
+    vec![style.paint(format!(" {} ", description))]
 }
 
 /// Plain-text key representation used by custom `hint_format` templates.
@@ -809,6 +820,7 @@ fn add_hint(
     max_keys: usize,
     action_aliases: &HashMap<String, String>,
     key_aliases: &HashMap<String, String>,
+    transparent_bg: bool,
 ) {
     if keys.is_empty() {
         return;
@@ -846,10 +858,17 @@ fn add_hint(
             description,
             modifier_style,
             key_aliases,
+            transparent_bg,
         );
         parts.extend(styled_keys);
-        let styled_desc =
-            style_description(display_label, palette, color_config, mode, description);
+        let styled_desc = style_description(
+            display_label,
+            palette,
+            color_config,
+            mode,
+            description,
+            transparent_bg,
+        );
         parts.extend(styled_desc);
     } else {
         // Custom template: render as a single plain-text string.
@@ -866,8 +885,12 @@ fn add_hint(
         let bg = resolved
             .key_bg
             .unwrap_or_else(|| palette_match!(palette.ribbon_unselected.background));
+        let mut style = Style::new().fg(fg);
+        if !transparent_bg {
+            style = style.on(bg);
+        }
 
-        parts.push(Style::new().fg(fg).on(bg).paint(rendered));
+        parts.push(style.paint(rendered));
     }
 }
 
@@ -904,6 +927,7 @@ fn render_hints_for_mode(
     max_keys: usize,
     action_aliases: &HashMap<String, String>,
     key_aliases: &HashMap<String, String>,
+    transparent_bg: bool,
 ) -> Vec<ANSIString<'static>> {
     let mut parts = vec![];
     let select_keys = get_select_key(keymap);
@@ -924,6 +948,7 @@ fn render_hints_for_mode(
                 max_keys,
                 action_aliases,
                 key_aliases,
+                transparent_bg,
             )
         };
     }
