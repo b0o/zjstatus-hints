@@ -22,7 +22,7 @@ struct State {
 
 register_plugin!(State);
 
-const TO_NORMAL: Action = Action::SwitchToMode(InputMode::Normal);
+const TO_NORMAL: Action = Action::SwitchToMode { input_mode: InputMode::Normal };
 
 const PLUGIN_SESSION_MANAGER: &str = "session-manager";
 const PLUGIN_CONFIGURATION: &str = "configuration";
@@ -39,32 +39,38 @@ type ActionLabel = (Action, &'static str);
 type ActionSequenceLabel = (&'static [Action], &'static str);
 
 const NORMAL_MODE_ACTIONS: &[ActionLabel] = &[
-    (Action::SwitchToMode(InputMode::Pane), "pane"),
-    (Action::SwitchToMode(InputMode::Tab), "tab"),
-    (Action::SwitchToMode(InputMode::Resize), "resize"),
-    (Action::SwitchToMode(InputMode::Move), "move"),
-    (Action::SwitchToMode(InputMode::Scroll), "scroll"),
-    (Action::SwitchToMode(InputMode::Search), "search"),
-    (Action::SwitchToMode(InputMode::Session), "session"),
+    (Action::SwitchToMode { input_mode: InputMode::Pane }, "pane"),
+    (Action::SwitchToMode { input_mode: InputMode::Tab }, "tab"),
+    (Action::SwitchToMode { input_mode: InputMode::Resize }, "resize"),
+    (Action::SwitchToMode { input_mode: InputMode::Move }, "move"),
+    (Action::SwitchToMode { input_mode: InputMode::Scroll }, "scroll"),
+    (Action::SwitchToMode { input_mode: InputMode::Search }, "search"),
+    (Action::SwitchToMode { input_mode: InputMode::Session }, "session"),
     (Action::Quit, "quit"),
 ];
 
 const PANE_MODE_ACTION_SEQUENCES: &[ActionSequenceLabel] = &[
-    (&[Action::NewPane(None, None, false), TO_NORMAL], "new"),
+    (
+        &[
+            Action::NewPane { direction: None, pane_name: None, start_suppressed: false },
+            TO_NORMAL,
+        ],
+        "new",
+    ),
     (&[Action::CloseFocus, TO_NORMAL], "close"),
     (&[Action::ToggleFocusFullscreen, TO_NORMAL], "fullscreen"),
     (&[Action::ToggleFloatingPanes, TO_NORMAL], "float"),
     (&[Action::TogglePaneEmbedOrFloating, TO_NORMAL], "embed"),
     (
         &[
-            Action::NewPane(Some(Direction::Right), None, false),
+            Action::NewPane { direction: Some(Direction::Right), pane_name: None, start_suppressed: false },
             TO_NORMAL,
         ],
         "split right",
     ),
     (
         &[
-            Action::NewPane(Some(Direction::Down), None, false),
+            Action::NewPane { direction: Some(Direction::Down), pane_name: None, start_suppressed: false },
             TO_NORMAL,
         ],
         "split down",
@@ -74,7 +80,17 @@ const PANE_MODE_ACTION_SEQUENCES: &[ActionSequenceLabel] = &[
 const TAB_MODE_ACTION_SEQUENCES: &[ActionSequenceLabel] = &[
     (
         &[
-            Action::NewTab(None, vec![], None, None, None, true),
+            Action::NewTab {
+                tiled_layout: None,
+                floating_layouts: vec![],
+                swap_tiled_layouts: None,
+                swap_floating_layouts: None,
+                tab_name: None,
+                should_change_focus_to_new_tab: true,
+                cwd: None,
+                initial_panes: None,
+                first_pane_unblock_condition: None,
+            },
             TO_NORMAL,
         ],
         "new",
@@ -474,8 +490,8 @@ fn render_hints_for_mode(
             let rename_keys = find_keys_for_actions(
                 keymap,
                 &[
-                    Action::SwitchToMode(InputMode::RenamePane),
-                    Action::PaneNameInput(vec![0]),
+                    Action::SwitchToMode { input_mode: InputMode::RenamePane },
+                    Action::PaneNameInput { input: vec![0] },
                 ],
                 false,
             );
@@ -486,10 +502,10 @@ fn render_hints_for_mode(
             let focus_keys = find_keys_for_action_groups(
                 keymap,
                 &[
-                    &[Action::MoveFocus(Direction::Left)],
-                    &[Action::MoveFocus(Direction::Down)],
-                    &[Action::MoveFocus(Direction::Up)],
-                    &[Action::MoveFocus(Direction::Right)],
+                    &[Action::MoveFocus { direction: Direction::Left }],
+                    &[Action::MoveFocus { direction: Direction::Down }],
+                    &[Action::MoveFocus { direction: Direction::Up }],
+                    &[Action::MoveFocus { direction: Direction::Right }],
                 ],
             );
             add_hint(&mut parts, &focus_keys, "move", colors);
@@ -506,8 +522,8 @@ fn render_hints_for_mode(
             let rename_keys = find_keys_for_actions(
                 keymap,
                 &[
-                    Action::SwitchToMode(InputMode::RenameTab),
-                    Action::TabNameInput(vec![0]),
+                    Action::SwitchToMode { input_mode: InputMode::RenameTab },
+                    Action::TabNameInput { input: vec![0] },
                 ],
                 false,
             );
@@ -536,8 +552,8 @@ fn render_hints_for_mode(
             let resize_keys = find_keys_for_action_groups(
                 keymap,
                 &[
-                    &[Action::Resize(Resize::Increase, None)],
-                    &[Action::Resize(Resize::Decrease, None)],
+                    &[Action::Resize { resize: Resize::Increase, direction: None }],
+                    &[Action::Resize { resize: Resize::Decrease, direction: None }],
                 ],
             );
             add_hint(&mut parts, &resize_keys, "resize", colors);
@@ -545,10 +561,10 @@ fn render_hints_for_mode(
             let increase_keys = find_keys_for_action_groups(
                 keymap,
                 &[
-                    &[Action::Resize(Resize::Increase, Some(Direction::Left))],
-                    &[Action::Resize(Resize::Increase, Some(Direction::Down))],
-                    &[Action::Resize(Resize::Increase, Some(Direction::Up))],
-                    &[Action::Resize(Resize::Increase, Some(Direction::Right))],
+                    &[Action::Resize { resize: Resize::Increase, direction: Some(Direction::Left) }],
+                    &[Action::Resize { resize: Resize::Increase, direction: Some(Direction::Down) }],
+                    &[Action::Resize { resize: Resize::Increase, direction: Some(Direction::Up) }],
+                    &[Action::Resize { resize: Resize::Increase, direction: Some(Direction::Right) }],
                 ],
             );
             add_hint(&mut parts, &increase_keys, "increase", colors);
@@ -556,10 +572,10 @@ fn render_hints_for_mode(
             let decrease_keys = find_keys_for_action_groups(
                 keymap,
                 &[
-                    &[Action::Resize(Resize::Decrease, Some(Direction::Left))],
-                    &[Action::Resize(Resize::Decrease, Some(Direction::Down))],
-                    &[Action::Resize(Resize::Decrease, Some(Direction::Up))],
-                    &[Action::Resize(Resize::Decrease, Some(Direction::Right))],
+                    &[Action::Resize { resize: Resize::Decrease, direction: Some(Direction::Left) }],
+                    &[Action::Resize { resize: Resize::Decrease, direction: Some(Direction::Down) }],
+                    &[Action::Resize { resize: Resize::Decrease, direction: Some(Direction::Up) }],
+                    &[Action::Resize { resize: Resize::Decrease, direction: Some(Direction::Right) }],
                 ],
             );
             add_hint(&mut parts, &decrease_keys, "decrease", colors);
@@ -569,10 +585,10 @@ fn render_hints_for_mode(
             let move_keys = find_keys_for_action_groups(
                 keymap,
                 &[
-                    &[Action::MovePane(Some(Direction::Left))],
-                    &[Action::MovePane(Some(Direction::Down))],
-                    &[Action::MovePane(Some(Direction::Up))],
-                    &[Action::MovePane(Some(Direction::Right))],
+                    &[Action::MovePane { direction: Some(Direction::Left) }],
+                    &[Action::MovePane { direction: Some(Direction::Down) }],
+                    &[Action::MovePane { direction: Some(Direction::Up) }],
+                    &[Action::MovePane { direction: Some(Direction::Right) }],
                 ],
             );
             add_hint(&mut parts, &move_keys, "move", colors);
@@ -582,8 +598,8 @@ fn render_hints_for_mode(
             let search_keys = find_keys_for_actions(
                 keymap,
                 &[
-                    Action::SwitchToMode(InputMode::EnterSearch),
-                    Action::SearchInput(vec![0]),
+                    Action::SwitchToMode { input_mode: InputMode::EnterSearch },
+                    Action::SearchInput { input: vec![0] },
                 ],
                 true,
             );
@@ -606,7 +622,7 @@ fn render_hints_for_mode(
             add_hint(&mut parts, &half_page_scroll_keys, "half page", colors);
 
             let edit_keys =
-                find_keys_for_actions(keymap, &[Action::EditScrollback, TO_NORMAL], false);
+                find_keys_for_actions(keymap, &[Action::EditScrollback { ansi: false }, TO_NORMAL], false);
             if !edit_keys.is_empty() {
                 add_hint(&mut parts, &edit_keys, "edit", colors);
             }
@@ -616,8 +632,8 @@ fn render_hints_for_mode(
             let search_keys = find_keys_for_actions(
                 keymap,
                 &[
-                    Action::SwitchToMode(InputMode::EnterSearch),
-                    Action::SearchInput(vec![0]),
+                    Action::SwitchToMode { input_mode: InputMode::EnterSearch },
+                    Action::SearchInput { input: vec![0] },
                 ],
                 true,
             );
@@ -640,11 +656,11 @@ fn render_hints_for_mode(
             add_hint(&mut parts, &half_page_scroll_keys, "half page", colors);
 
             let down_keys =
-                find_keys_for_actions(keymap, &[Action::Search(SearchDirection::Down)], true);
+                find_keys_for_actions(keymap, &[Action::Search { direction: SearchDirection::Down }], true);
             add_hint(&mut parts, &down_keys, "down", colors);
 
             let up_keys =
-                find_keys_for_actions(keymap, &[Action::Search(SearchDirection::Up)], true);
+                find_keys_for_actions(keymap, &[Action::Search { direction: SearchDirection::Up }], true);
             add_hint(&mut parts, &up_keys, "up", colors);
 
             add_hint(&mut parts, &select_keys, "select", colors);
@@ -673,7 +689,7 @@ fn render_hints_for_mode(
         }
         _ => {
             let keys =
-                find_keys_for_actions(keymap, &[Action::SwitchToMode(InputMode::Normal)], true);
+                find_keys_for_actions(keymap, &[Action::SwitchToMode { input_mode: InputMode::Normal }], true);
             add_hint(&mut parts, &keys, "normal", colors);
         }
     }
