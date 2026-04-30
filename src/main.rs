@@ -142,7 +142,7 @@ impl ZellijPlugin for State {
         ]);
 
         set_selectable(false);
-        subscribe(&[EventType::ModeUpdate, EventType::SessionUpdate]);
+        subscribe(&[EventType::ModeUpdate]);
     }
 
     fn update(&mut self, event: Event) -> bool {
@@ -176,11 +176,7 @@ impl ZellijPlugin for State {
             String::new()
         };
 
-        // HACK: Because we're not sure when zjstatus will be ready to receive messages,
-        // we'll repeatedly send messages until the user has switched to a different mode,
-        // at which point we'll assume that zjstatus has been initialized. The render function
-        // does not seem to be called too frequently, so this should be fine.
-        if !output.is_empty() && Some(mode_info.mode) != mode_info.base_mode {
+        if !output.is_empty() {
             self.initialized = true;
         }
 
