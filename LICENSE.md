@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2025 Maddison Hellstrom
+Copyright (c) 2025 Maddison Cohodas
 Copyright (c) 2020 Zellij contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

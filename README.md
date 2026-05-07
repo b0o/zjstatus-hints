@@ -80,7 +80,7 @@ layout {
 
 ## License
 
-&copy; 2025 Maddison Hellstrom
+&copy; 2025 Maddison Cohodas
 
 Adapted from the built-in Zellij status-bar plugin by Brooks J Rady.
 
