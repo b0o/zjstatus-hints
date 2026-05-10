@@ -32,6 +32,10 @@ plugins {
         // E.g. if you have set default_mode to "locked", then
         // you can hide hints in the locked mode by setting this to true
         hide_in_base_mode false // default
+        // Hide hints in locked mode
+        // Usefull if the default Ctrl+g shortcut
+        // enables and disables this mode
+        hide_in_locked_mode false // default
     }
 }
 
