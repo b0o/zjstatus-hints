@@ -239,6 +239,7 @@ fn truncate_ansi_string(text: &str, overflow_str: &str, max_len: usize) -> Strin
     let mut result = String::new();
     let mut visible_count = 0;
     let mut parser = AnsiParser::new(text);
+    let mut add_printable_chrs = true;
 
     while let Some(segment) = parser.next_segment() {
         match segment {
@@ -246,11 +247,12 @@ fn truncate_ansi_string(text: &str, overflow_str: &str, max_len: usize) -> Strin
                 result.push_str(&seq);
             }
             AnsiSegment::VisibleChar(ch) => {
-                if visible_count >= target_len {
-                    break;
+                if add_printable_chrs {
+                    result.push(ch);
+                    visible_count += 1;
+
+                    add_printable_chrs = visible_count < target_len;
                 }
-                result.push(ch);
-                visible_count += 1;
             }
         }
     }
