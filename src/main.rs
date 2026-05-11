@@ -375,18 +375,32 @@ impl ZellijPlugin for State {
             PermissionType::MessageAndLaunchOtherPlugins,
         ]);
 
-        set_selectable(false);
-        subscribe(&[EventType::ModeUpdate]);
+        // NOTE: do NOT call set_selectable(false) here. zellij shows the
+        // permission grant dialog inside this plugin's pane; if the pane is
+        // unfocusable the user cannot interact with the dialog. Defer the
+        // call until permissions are confirmed (see `update`).
+        subscribe(&[
+            EventType::ModeUpdate,
+            EventType::PermissionRequestResult,
+        ]);
     }
 
     fn update(&mut self, event: Event) -> bool {
         let mut should_render = !self.initialized;
-        if let Event::ModeUpdate(mode_info) = event {
-            if self.mode_info != mode_info {
-                should_render = true;
+        match event {
+            Event::ModeUpdate(mode_info) => {
+                if self.mode_info != mode_info {
+                    should_render = true;
+                }
+                self.mode_info = mode_info;
+                self.base_mode_is_locked = self.mode_info.base_mode == Some(InputMode::Locked);
             }
-            self.mode_info = mode_info;
-            self.base_mode_is_locked = self.mode_info.base_mode == Some(InputMode::Locked);
+            Event::PermissionRequestResult(_result) => {
+                // Permissions resolved (granted or denied). Safe to hide the
+                // plugin pane from selection now.
+                set_selectable(false);
+            }
+            _ => {}
         };
         should_render
     }
