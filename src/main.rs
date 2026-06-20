@@ -18,6 +18,10 @@ struct State {
     max_length: usize,
     overflow_str: String,
     hide_in_base_mode: bool,
+    /// True once the host has resolved request_permission(). Until then,
+    /// pipe_message_to_plugin() is denied and set_selectable() races with the
+    /// in-pane permission dialog, so we defer both until this flips.
+    permissions_granted: bool,
 }
 
 register_plugin!(State);
@@ -125,23 +129,45 @@ impl ZellijPlugin for State {
             PermissionType::MessageAndLaunchOtherPlugins,
         ]);
 
-        set_selectable(false);
-        subscribe(&[EventType::ModeUpdate, EventType::SessionUpdate]);
+        subscribe(&[
+            EventType::ModeUpdate,
+            EventType::SessionUpdate,
+            EventType::PermissionRequestResult,
+        ]);
     }
 
     fn update(&mut self, event: Event) -> bool {
         let mut should_render = !self.initialized;
-        if let Event::ModeUpdate(mode_info) = event {
-            if self.mode_info != mode_info {
+        match event {
+            Event::ModeUpdate(mode_info) => {
+                if self.mode_info != mode_info {
+                    should_render = true;
+                }
+                self.mode_info = mode_info;
+                self.base_mode_is_locked = self.mode_info.base_mode == Some(InputMode::Locked);
+            }
+            Event::PermissionRequestResult(result) => {
+                // Permissions resolved (granted or denied). Only now is it safe
+                // to hide the pane from selection -- doing so in load() blocks
+                // the permission dialog that zellij renders inside this pane --
+                // and to start emitting pipe messages.
+                self.permissions_granted = matches!(result, PermissionStatus::Granted);
+                set_selectable(false);
                 should_render = true;
             }
-            self.mode_info = mode_info;
-            self.base_mode_is_locked = self.mode_info.base_mode == Some(InputMode::Locked);
+            _ => {}
         };
         should_render
     }
 
     fn render(&mut self, _rows: usize, _cols: usize) {
+        // Before permissions are granted, pipe_message_to_plugin() is denied
+        // (the message is dropped, with no retry) and application state cannot
+        // be read, so there is nothing useful to emit yet.
+        if !self.permissions_granted {
+            return;
+        }
+
         let mode_info = &self.mode_info;
         let output = if !(self.hide_in_base_mode && Some(mode_info.mode) == mode_info.base_mode) {
             let keymap = get_keymap_for_mode(mode_info);
