@@ -18,6 +18,7 @@ struct State {
     max_length: usize,
     overflow_str: String,
     hide_in_base_mode: bool,
+    custom_hints: Option<String>,
 }
 
 register_plugin!(State);
@@ -120,6 +121,8 @@ impl ZellijPlugin for State {
             .map(|s| s.to_lowercase().parse::<bool>().unwrap_or(false))
             .unwrap_or(false);
 
+        self.custom_hints = configuration.get("custom_hints").cloned();
+
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::MessageAndLaunchOtherPlugins,
@@ -144,11 +147,14 @@ impl ZellijPlugin for State {
     fn render(&mut self, _rows: usize, _cols: usize) {
         let mode_info = &self.mode_info;
         let output = if !(self.hide_in_base_mode && Some(mode_info.mode) == mode_info.base_mode) {
-            let keymap = get_keymap_for_mode(mode_info);
-            let parts = render_hints_for_mode(mode_info.mode, &keymap, &mode_info.style.colors);
-
-            let ansi_strings = ANSIStrings(&parts);
-            let formatted = format!(" {}", ansi_strings);
+            let formatted = if let Some(ref custom) = self.custom_hints {
+                format!(" {}", custom)
+            } else {
+                let keymap = get_keymap_for_mode(mode_info);
+                let parts = render_hints_for_mode(mode_info.mode, &keymap, &mode_info.style.colors);
+                let ansi_strings = ANSIStrings(&parts);
+                format!(" {}", ansi_strings)
+            };
 
             let visible_len = calculate_visible_length(&formatted);
             if self.max_length > 0 && visible_len > self.max_length {

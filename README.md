@@ -31,6 +31,8 @@ plugins {
         // Hide hints in base mode (a.k.a. default mode)
         // E.g. if you have set default_mode to "locked", then
         // you can hide hints in the locked mode by setting this to true
+        // Custom hint string to override auto-generated hints
+        custom_hints "Shift+J: pane, Shift+K: tab"
         hide_in_base_mode false // default
     }
 }
@@ -70,6 +72,7 @@ layout {
 - `overflow_str`: String to append when truncated (default: "...")
 - `pipe_name`: Name of the pipe for zjstatus integration (default: "zjstatus_hints")
 - `hide_in_base_mode`: Hide hints in base mode (a.k.a. default mode) (default: false)
+- `custom_hints`: Custom hint string to override auto-generated hints
 
 ## TODO
 
